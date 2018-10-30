@@ -67,7 +67,8 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => App\User::class,
+            //'model' => App\User::class,
+            'model'=>App\Model\Member::class,//默认使用laravel 自带的用户验证的数据表
         ],
 
         // 'users' => [
