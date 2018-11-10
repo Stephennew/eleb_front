@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Model\Order;
 use App\Model\OrderDetail;
 use function foo\func;
+use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -71,14 +72,20 @@ class OrderController extends Controller
         /*DB::enableQueryLog();
         $arr = DB::table('carts')->select('goods_id','amount')->where('user_id',Auth::id())->groupBy('goods_id')->count('*');
         var_dump(DB::getQueryLog());*/
-        $shu = DB::select("select goods_id,count(*) as amount from carts WHERE user_id = ? GROUP BY goods_id",[Auth::id()]);
-        DB::transaction(function () use ($order,$shu,$shop){
+        $last_order_id = '';
+        $shu = DB::select("select goods_id,amount from carts WHERE user_id=?",[Auth::id()]);
+        DB::transaction(function () use (&$last_order_id,$order,$shu,$shop){
             //DB::enableQueryLog();
             $ord = Order::create($order);
+            //订单添加成功后，清除当前用户购物车内的所有订单
+            DB::table('carts')
+                ->where('user_id',Auth::id())
+                ->delete();
             $order_id = $ord->id;
+            $last_order_id = $order_id;
             for ($i=0;$i<count($shu);++$i)
             {
-               $order_details = [
+                $order_details = [
                     'order_id'=>$order_id,
                     'goods_id'=>$shu[$i]->goods_id,
                     'amount'=>$shu[$i]->amount,
@@ -92,9 +99,9 @@ class OrderController extends Controller
                 $order_details['goods_price'] = $shop[0]->goods_price;
                 OrderDetail::create($order_details);
             }
-            //var_dump(DB::getQueryLog());
-        });
-        $last_order_id = DB::table('orders')->select('id')->orderBy('id','desc')->value('id');
+        //var_dump(DB::getQueryLog());
+    });
+        //$last_order_id = DB::table('orders')->select('id')->orderBy('id','desc')->value('id');
         return [
             "status"=>"true",
             "message"=>"添加成功",
@@ -108,17 +115,13 @@ class OrderController extends Controller
         $order = DB::table('orders')
             ->where('id',$request->id)
             ->get();
-        $order_deail = DB::table('order_details')
-            ->where('order_id',$order[0]->id)
-            ->select('goods_id','goods_name','goods_img','amount','goods_price')
-            ->get();
         $arr = [];
         foreach ($order as $ord)
         {
             $arr['id'] = $ord->id;
             $arr['order_code'] = $ord->sn;
             $arr['order_birth_time'] = $ord->created_at;
-            $arr['order_status'] = $ord->status;
+            $arr['order_status'] = '代付款';
             $arr['shop_id'] = $ord->shop_id;
             $shop = DB::table('shops')
                    ->where('id',$ord->shop_id)
@@ -128,6 +131,10 @@ class OrderController extends Controller
             $arr['shop_img'] =$shop[0]->shop_img;
             $arr['order_price'] =$ord->total;
             $arr['order_address'] =$ord->province.$ord->city.$ord->county.$ord->address;
+            $order_deail = DB::table('order_details')
+                ->where('order_id',$order[0]->id)
+                ->select('goods_id','goods_name','goods_img','amount','goods_price')
+                ->get();
             $arr['goods_list'] = $order_deail;
         }
         return $arr;
@@ -138,6 +145,9 @@ class OrderController extends Controller
         //获取当前用户所有订单列表
         $order = DB::table('orders')
             ->where('user_id',Auth::id())
+            ->orderBy('created_at','desc')
+            ->offset(0)
+            ->limit(5)
             ->get();
         $arr = [];
        foreach ($order as $ord)
@@ -146,7 +156,7 @@ class OrderController extends Controller
             $a['id'] = $ord->id;
             $a['order_code'] = $ord->sn;
             $a['order_birth_time'] = $ord->created_at;
-            $a['order_status'] = $ord->status;
+            $a['order_status'] = '代付款';
             $a['shop_id'] = $ord->shop_id;
             $shop = DB::table('shops')
                 ->where('id',$ord->shop_id)
@@ -156,11 +166,11 @@ class OrderController extends Controller
             $a['shop_img'] =$shop[0]->shop_img;
             $a['order_price'] =$ord->total;
             $a['order_address'] =$ord->province.$ord->city.$ord->county.$ord->address;
-            $order_deail = DB::table('order_details')
+            $order_detail = DB::table('order_details')
                 ->where('order_id',$ord->id)
                 ->select('goods_id','goods_name','goods_img','amount','goods_price')
                 ->get();
-            $a['goods_list'] = $order_deail;
+            $a['goods_list'] = $order_detail;
             $arr[] = $a;
         }
         return $arr;

@@ -37,7 +37,7 @@ class CartController extends Controller
        {
            $menus = DB::table('menus')
                ->where('id',$cr->goods_id)
-               ->select('goods_name','goods_price')
+               ->select('goods_name','goods_price','goods_img')
                ->get();
            $menus[0]->goods_id = $cr->goods_id;
            $menus[0]->amount = $cr->amount;
@@ -51,28 +51,29 @@ class CartController extends Controller
 
     public function addCart(Request $request)
     {
-        /*
-         *  * goodsList: 商品列表
-         * goodsCount: 商品数量
-         * user_id
-         {
-              "status": "true",
-              "message": "添加成功"
-           }*/
-        if(!$request->input('goodsList')){
+        /*if(!$request->input('goodsList')){
             return [
               'status'=>'false',
               'message'=>'还未添加商品哦，快添加哦！！！',
             ];
-        }
+        }*/
         $a = count($request->input('goodsList'));
         for ($i=0;$i<=$a-1;++$i)
         {
-            Cart::create([
-                'amount'=>$request->input('goodsCount')[$i],
-                'goods_id'=>$request->input('goodsList')[$i],
-                'user_id'=>Auth::id(),//可以直接获取已经认证的用户ID
+            $amount = DB::table('carts')
+                ->where('goods_id',$request->input('goodsList')[$i])
+                ->select('amount')
+                ->value('amount');
+            if($amount != null){
+                Cart::where('goods_id',$request->input('goodsList')[$i])
+                    ->update(['amount' => $amount + $request->input('goodsCount')[$i]]);
+            }else{
+                Cart::create([
+                    'amount'=>$request->input('goodsCount')[$i],
+                    'goods_id'=>$request->input('goodsList')[$i],
+                    'user_id'=>Auth::id(),//可以直接获取已经认证的用户ID
                 ]);
+            }
         }
         return [
           'status'=>'true',

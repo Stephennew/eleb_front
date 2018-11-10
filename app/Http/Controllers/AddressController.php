@@ -95,6 +95,7 @@ class AddressController extends Controller
          * */
         //地址列表
         $addressList = DB::table('addresses')
+            ->where('user_id',Auth::id())
             ->select('id','provence','city','area','name','tel','detail_address')
             ->get();
 

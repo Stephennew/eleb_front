@@ -14,18 +14,6 @@ class SessionController extends Controller
 {
     public function loginCheck(Request $request)
     {
-        /**
-         * name:用户名
-         * password:密码
-         */
-
-        //{
-           /* "status":"true",
-            "message":"登录成功",
-            "user_id":"1",
-            "username":"张三"*/
-        //}
-
         //验证数据是否为空
         //手动创建验证器
         $validator = Validator::make($request->all(),[
@@ -40,7 +28,6 @@ class SessionController extends Controller
         if($validator->fails()){
            $str = [];
            $strr ='';
-            //dd($validator->errors());
            foreach ($validator->errors()->all() as $v)
             {
                 $str[] = $v;
@@ -59,7 +46,7 @@ class SessionController extends Controller
         //验证用户名密码是否正确
         if(Auth::attempt(['username'=>$request->name,'password'=>$request->password])){
            return [
-                "status"=>"true",
+               "status"=>"true",
                "message"=>"登录成功",
                "user_id"=>Auth::user()->id,
                "username"=>Auth::user()->username,
@@ -75,17 +62,6 @@ class SessionController extends Controller
 
     public function register(Request $request)
     {
-        /**
-         * username: 用户名
-         * tel: 手机号
-         * sms: 短信验证码
-         * password: 密码
-         */
-
-        /*return [
-            "status"=> "true",
-            "message"=> "注册成功"
-        ];*/
         //发送短信成功保存到redis  注册时在取出
         //将redis 中序列化后打的取出来进行反序列化再比较
         $sms = Redis::get('sms_'.$request->tel);
@@ -98,6 +74,7 @@ class SessionController extends Controller
         $data = [
           'username'=>$request->username,
           'tel'=>$request->tel,
+          'status'=>1,
           'password'=>bcrypt($request->password),//加密
             'rememberToken'=>str_random(40),//随机token用于做自动登录使用的
         ];

@@ -40,8 +40,9 @@ class ShopsController extends Controller
             ->select('id','shop_name','shop_img','shop_rating',
                 'brand','on_time','fengniao','bao','piao','zhun','start_send','send_cost','notice',
                 'discount')
-            ->get();
-
+            ->first();
+        //$shop  stdClass
+         $shop->commodity=[];
         //获取该商家菜品分类信息
         $cates =DB::table('menu_categories')
             ->where('shop_id',$request->id)
@@ -57,9 +58,10 @@ class ShopsController extends Controller
                     'month_sales','description','goods_price','rating')
                 ->get();
             $c->goods_list=$menus;
-            $shop[0]->commodity[]=$c;
+            $shop->commodity[]=$c;
         }
-        $arr = ["evaluate"=>[[//评价
+        $shop->evaluate = [
+            [   //评价
                 "user_id"=>12344,
                 "username"=>"w******k",
                 "user_img"=>"/images/slider-pic4.jpeg",
@@ -67,9 +69,10 @@ class ShopsController extends Controller
                 "evaluate_code"=>1,
                 "send_time"=>30,
                 "evaluate_details"=>"不怎么好吃"
-                    ]]
+            ]
         ];
-        foreach ($shop as $sh)
+        //var_dump($shop);exit;
+        /*foreach ($shop as $sh)
         {
             $sh->distance=637;
             $sh->estimate_time=31;
@@ -81,7 +84,7 @@ class ShopsController extends Controller
             {
                 $arr[$key] = $s;
             }
-        }
+        }*/
 
 //        foreach ($shop as $sh)
 //        {
@@ -99,7 +102,7 @@ class ShopsController extends Controller
 //            $arr[]=$sh;
 //        }
 
-        return $arr;
+        return json_encode($shop);
 
     }
 }
